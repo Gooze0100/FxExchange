@@ -7,9 +7,9 @@ namespace FxExchange.Core;
 /// </summary>
 public interface IExchangeRateProvider
 {
-    /// <summary>ISO codes this provider knows, sorted alphabetically (used in error messages).</summary>
+    /// <summary>Sorted alphabetically, because the list is shown in error messages.</summary>
     IReadOnlyCollection<string> SupportedCurrencies { get; }
 
-    /// <summary>Returns the DKK price of 100 units of the currency, or null if the currency is unknown.</summary>
+    /// <summary>Null if the currency is unknown; the caller decides whether that is an error.</summary>
     decimal? GetDkkPer100Units(string isoCode);
 }

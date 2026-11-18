@@ -21,7 +21,6 @@ internal sealed class StubHandler : HttpMessageHandler
     }
 }
 
-/// <summary>Fake clock, so "today" is whatever the test says.</summary>
 internal sealed class FixedTimeProvider : TimeProvider
 {
     public FixedTimeProvider(DateTimeOffset utcNow) => UtcNow = utcNow;

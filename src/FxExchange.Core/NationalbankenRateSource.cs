@@ -4,8 +4,7 @@ using System.Xml.Linq;
 namespace FxExchange.Core;
 
 /// <summary>
-/// Downloads the daily official rates from Danmarks Nationalbank (the same source and format as the
-/// table in the exercise: DKK per 100 units). Free, no API key.
+/// Same source and format as the exercise's table (DKK per 100 units), free and without an API key.
 /// </summary>
 public static class NationalbankenRateSource
 {
@@ -26,8 +25,6 @@ public static class NationalbankenRateSource
     /// Parses elements like &lt;currency code="EUR" desc="Euro" rate="746.13" /&gt;.
     /// Entries with a missing or unparsable rate are skipped instead of failing the whole file.
     /// </summary>
-    /// <exception cref="System.Xml.XmlException">The text is not valid XML.</exception>
-    /// <exception cref="ExchangeException">The XML contains no usable rates.</exception>
     public static InMemoryExchangeRateProvider Parse(string xml)
     {
         ArgumentNullException.ThrowIfNull(xml);

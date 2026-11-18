@@ -1,8 +1,7 @@
 namespace FxExchange.Core;
 
 /// <summary>
-/// Rate provider backed by a dictionary. Used both for the built-in rates and for rates downloaded
-/// from Nationalbanken, so loading data and looking it up are kept separate.
+/// Used for built-in, downloaded and cached rates alike, so loading rates and looking them up stay separate.
 /// </summary>
 public sealed class InMemoryExchangeRateProvider : IExchangeRateProvider
 {
@@ -33,7 +32,6 @@ public sealed class InMemoryExchangeRateProvider : IExchangeRateProvider
 
     public IReadOnlyCollection<string> SupportedCurrencies { get; }
 
-    /// <summary>All rates, including DKK. Used when saving the rates to the cache.</summary>
     public IReadOnlyDictionary<string, decimal> DkkPer100Units => _dkkPer100Units;
 
     public decimal? GetDkkPer100Units(string isoCode)

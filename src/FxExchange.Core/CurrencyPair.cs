@@ -19,10 +19,8 @@ public sealed record CurrencyPair
     public bool IsSameCurrency => MainCurrency == MoneyCurrency;
 
     /// <summary>
-    /// Parses text like "EUR/DKK" (case-insensitive, surrounding spaces allowed).
     /// Only the format is validated here; whether the currencies are known is the rate provider's job.
     /// </summary>
-    /// <exception cref="InvalidCurrencyPairException">The text is not in the MAIN/MONEY format.</exception>
     public static CurrencyPair Parse(string? text)
     {
         if (string.IsNullOrWhiteSpace(text))

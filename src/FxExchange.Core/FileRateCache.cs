@@ -3,7 +3,6 @@ using System.Text.Json;
 namespace FxExchange.Core;
 
 /// <summary>
-/// Remembers the last successfully downloaded rates in a small JSON file in the user's temp folder.
 /// Zero setup: no database, the file is created on first use, and a missing or broken file is simply ignored.
 /// </summary>
 public sealed class FileRateCache
@@ -24,7 +23,6 @@ public sealed class FileRateCache
 
     public string FilePath { get; }
 
-    /// <summary>Returns the cached rates, or null if there is no cache or it can't be read.</summary>
     public CachedRates? TryLoad()
     {
         try
@@ -48,7 +46,7 @@ public sealed class FileRateCache
     }
 
     /// <summary>
-    /// Saves the rates with the current time. Returns false instead of throwing if the file can't be written:
+    /// Returns false instead of throwing if the file can't be written:
     /// a failed cache write must never stop the exchange itself.
     /// </summary>
     public bool TrySave(InMemoryExchangeRateProvider rates)
@@ -85,7 +83,6 @@ public sealed class FileRateCache
     }
 }
 
-/// <summary>What is stored in the cache file: when the rates were downloaded, and the rates themselves.</summary>
 public sealed record CachedRates(DateTimeOffset FetchedAt, Dictionary<string, decimal> DkkPer100Units)
 {
     public InMemoryExchangeRateProvider ToProvider() => new(DkkPer100Units);

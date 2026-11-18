@@ -1,8 +1,5 @@
 namespace FxExchange.Core;
 
-/// <summary>
-/// Exchanges an amount from the main currency of a pair to its money currency.
-/// </summary>
 public sealed class CurrencyExchanger
 {
     /// <summary>Result precision. The source rates have 4 significant decimals, so more would be false precision.</summary>
@@ -27,8 +24,6 @@ public sealed class CurrencyExchanger
     /// Cross rate through DKK: amount * (DKK per 100 MAIN) / (DKK per 100 MONEY).
     /// The "per 100" cancels out. Multiplying before dividing keeps the most precision.
     /// </summary>
-    /// <exception cref="UnknownCurrencyException">One of the currencies has no rate.</exception>
-    /// <exception cref="ExchangeException">The amount is negative or too large.</exception>
     public decimal Exchange(CurrencyPair pair, decimal amount)
     {
         ArgumentNullException.ThrowIfNull(pair);

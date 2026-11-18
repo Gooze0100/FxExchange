@@ -1,8 +1,7 @@
 namespace FxExchange.Core;
 
 /// <summary>
-/// The rates given in the exercise: DKK required to purchase 100 units of each currency.
-/// Used by default so the tool works offline and gives deterministic results.
+/// The rates from the exercise. Used by default so the tool works offline and gives deterministic results.
 /// </summary>
 public static class DefaultExchangeRates
 {
