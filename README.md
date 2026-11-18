@@ -20,7 +20,7 @@ Unknown currency 'XYZ'. Supported currencies: CHF, DKK, EUR, GBP, JPY, NOK, SEK,
 
 ## Build, test, run
 
-Requires the .NET 8 SDK (or newer). No database, no API keys, no setup.
+Requires the .NET 10 SDK (the current LTS release). No database, no API keys, no setup.
 
 ```
 git clone <repo-url>
@@ -30,7 +30,7 @@ dotnet test
 dotnet run --project src/FxExchange.Cli -- EUR/DKK 1
 ```
 
-The executable is called `Exchange` (`src/FxExchange.Cli/bin/Debug/net8.0/Exchange.exe`).
+The executable is called `Exchange` (`src/FxExchange.Cli/bin/Debug/net10.0/Exchange.exe`).
 
 ### Live rates (optional)
 
@@ -119,7 +119,7 @@ Nationalbanken publishes once per banking day.
 **Testability.** `ExchangeCommand.Run` gets the args, rate provider, output/error writers and culture as
 parameters, so tests run without a real console or the machine's culture. The live source takes an
 `HttpClient`, so tests use a fake `HttpMessageHandler` instead of the real network. The cache takes a
-file path and a `TimeProvider` (.NET 8's injectable clock), so tests use their own temp folder and can
+file path and a `TimeProvider` (.NET's built-in injectable clock), so tests use their own temp folder and can
 "move to tomorrow" to test stale-cache behaviour.
 
 ## What I would add in a real system
