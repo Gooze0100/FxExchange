@@ -1,0 +1,13 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <AssemblyName>Exchange</AssemblyName>
+    <RootNamespace>FxExchange.Cli</RootNamespace>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\FxExchange.Core\FxExchange.Core.csproj" />
+  </ItemGroup>
+
+</Project>

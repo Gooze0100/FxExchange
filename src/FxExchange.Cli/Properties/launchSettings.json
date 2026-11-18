@@ -1,0 +1,23 @@
+{
+  "profiles": {
+    "EUR/DKK 1": {
+      "commandName": "Project",
+      "commandLineArgs": "EUR/DKK 1"
+    },
+    "EUR/USD 100": {
+      "commandName": "Project",
+      "commandLineArgs": "EUR/USD 100"
+    },
+    "Unknown currency": {
+      "commandName": "Project",
+      "commandLineArgs": "EUR/XYZ 1"
+    },
+    "Live rates": {
+      "commandName": "Project",
+      "commandLineArgs": "EUR/DKK 1 --live"
+    },
+    "No arguments (usage)": {
+      "commandName": "Project"
+    }
+  }
+}
