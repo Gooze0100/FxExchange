@@ -2,6 +2,8 @@
   <PropertyGroup>
     <TargetFramework>net10.0</TargetFramework>
     <Nullable>enable</Nullable>
+    <!-- Passing null where it isn't allowed is a build error, not a runtime crash. -->
+    <WarningsAsErrors>nullable</WarningsAsErrors>
     <ImplicitUsings>enable</ImplicitUsings>
   </PropertyGroup>
 </Project>

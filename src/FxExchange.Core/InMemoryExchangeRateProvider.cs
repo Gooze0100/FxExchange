@@ -34,9 +34,6 @@ public sealed class InMemoryExchangeRateProvider : IExchangeRateProvider
 
     public IReadOnlyDictionary<string, decimal> DkkPer100Units => _dkkPer100Units;
 
-    public decimal? GetDkkPer100Units(string isoCode)
-    {
-        ArgumentNullException.ThrowIfNull(isoCode);
-        return _dkkPer100Units.TryGetValue(isoCode, out var rate) ? rate : (decimal?)null;
-    }
+    public decimal? GetDkkPer100Units(string isoCode) =>
+        _dkkPer100Units.TryGetValue(isoCode, out var rate) ? rate : null;
 }

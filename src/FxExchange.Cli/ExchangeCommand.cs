@@ -26,12 +26,6 @@ public static class ExchangeCommand
         TextWriter error,
         CultureInfo culture)
     {
-        ArgumentNullException.ThrowIfNull(args);
-        ArgumentNullException.ThrowIfNull(rates);
-        ArgumentNullException.ThrowIfNull(output);
-        ArgumentNullException.ThrowIfNull(error);
-        ArgumentNullException.ThrowIfNull(culture);
-
         if (args.Count != 2)
         {
             output.WriteLine(Usage);

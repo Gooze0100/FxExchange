@@ -27,8 +27,6 @@ public static class NationalbankenRateSource
     /// </summary>
     public static InMemoryExchangeRateProvider Parse(string xml)
     {
-        ArgumentNullException.ThrowIfNull(xml);
-
         var document = XDocument.Parse(xml);
         var rates = new Dictionary<string, decimal>(StringComparer.OrdinalIgnoreCase);
 

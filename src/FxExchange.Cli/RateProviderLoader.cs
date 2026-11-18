@@ -16,12 +16,9 @@ public static class RateProviderLoader
         HttpClient httpClient,
         FileRateCache cache,
         TextWriter warnings,
+        Uri? sourceUrl = null,
         CancellationToken cancellationToken = default)
     {
-        ArgumentNullException.ThrowIfNull(httpClient);
-        ArgumentNullException.ThrowIfNull(cache);
-        ArgumentNullException.ThrowIfNull(warnings);
-
         var cached = cache.TryLoad();
         if (cached is not null && cache.IsFromToday(cached))
         {
@@ -30,7 +27,7 @@ public static class RateProviderLoader
 
         try
         {
-            var live = await NationalbankenRateSource.FetchAsync(httpClient, cancellationToken: cancellationToken)
+            var live = await NationalbankenRateSource.FetchAsync(httpClient, sourceUrl, cancellationToken)
                 .ConfigureAwait(false);
             cache.TrySave(live);
             return live;

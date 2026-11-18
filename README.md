@@ -52,6 +52,22 @@ created automatically; a missing, unreadable or corrupted file is ignored. No da
 
 Without `--live` the built-in rates are used, so results are deterministic and match the exercise.
 
+### Configuration (optional)
+
+`src/FxExchange.Cli/appsettings.json` (copied next to `Exchange.exe`) holds the settings for `--live`:
+
+```json
+{
+  "ExchangeRates": {
+    "SourceUrl": "https://www.nationalbanken.dk/api/currencyratesxml?lang=en",
+    "TimeoutSeconds": 5
+  }
+}
+```
+
+The same values are defaults in code, so a missing file, a missing value or a broken file still works:
+a broken or invalid value is reported as a warning and the default is used.
+
 ## Structure
 
 ```
@@ -69,6 +85,7 @@ src/FxExchange.Cli      thin console layer (assembly name: Exchange)
   Program                         composition root: chooses the rate source
   ExchangeCommand                 argument parsing, output, exit codes (testable)
   RateProviderLoader              live rates -> cache -> built-in fallback chain
+  ExchangeRateOptions             settings from appsettings.json, with safe defaults
 
 tests/FxExchange.Tests  xUnit tests for every part above
 ```
@@ -110,6 +127,11 @@ catches only those, prints a clear message to stderr and returns a non-zero exit
 is down, but the user must know which rates were used. Hence the chain live → cached → built-in, with a
 warning on stderr whenever the answer isn't based on today's rates.
 
+**Configuration with safe defaults.** External endpoints can change, so the
+source URL and timeout live in `appsettings.json` and are bound to `ExchangeRateOptions` (the .NET Options
+pattern). Defaults in code keep the zero-setup promise. A changed address is a config change; a changed
+response format would still need a code change in the parser.
+
 **Persistence without setup.** The cache is a plain JSON file in the temp folder rather than a database,
 as the exercise asks. It is written to a temporary file first and then moved into place, so a crash can't
 leave a half-written cache. Cache failures (no write access, corrupted file) never stop an exchange – the
@@ -124,11 +146,11 @@ file path and a `TimeProvider` (.NET's built-in injectable clock), so tests use 
 
 ## What I would add in a real system
 
-- Rates have a **timestamp/validity date** and stale rates are rejected or flagged.
+- Every result carries its **rate date** (from the XML, not the download time), and stale rates are rejected or flagged.
 - Retries with backoff for the download (e.g. Polly), and a shared cache (e.g. Redis) when many
   instances run as a service instead of one file per user.
 - **Bid/ask spread** and fees – a bank doesn't exchange at the mid rate.
 - Currency-specific **minor units** (JPY has 0 decimals, most others 2; ISO 4217).
-- Dependency injection with the Generic Host, logging, configuration for the data source URL.
+- Dependency injection with the Generic Host, structured logging (`ILogger`).
 - A `Money` value type (amount + currency) so amounts in different currencies can't be mixed.
 - Audit trail: which rate was used for each exchange.

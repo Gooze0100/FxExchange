@@ -85,6 +85,28 @@ public sealed class RateProviderLoaderTests : IDisposable
         Assert.Equal(743.94m, provider.GetDkkPer100Units("EUR"));
     }
 
+    [Fact]
+    public async Task ConfiguredSourceUrl_IsTheOneCalled()
+    {
+        var handler = WorkingService();
+        var url = new Uri("https://example.com/rates.xml");
+        using var http = new HttpClient(handler);
+
+        await RateProviderLoader.LoadLiveOrDefaultAsync(http, CreateCache(), _warnings, url);
+
+        Assert.Equal(url, handler.LastRequestUri);
+    }
+
+    [Fact]
+    public async Task NoSourceUrl_CallsNationalbanken()
+    {
+        var handler = WorkingService();
+
+        await LoadAsync(handler, CreateCache());
+
+        Assert.Equal(NationalbankenRateSource.DefaultUri, handler.LastRequestUri);
+    }
+
     private static StubHandler WorkingService() => new(() => StubHandler.Ok(SampleData.NationalbankenXml));
 
     private FileRateCache CreateCache() => new(_file.FilePath, _clock);

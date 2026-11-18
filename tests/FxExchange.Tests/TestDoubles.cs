@@ -11,12 +11,15 @@ internal sealed class StubHandler : HttpMessageHandler
 
     public int CallCount { get; private set; }
 
+    public Uri? LastRequestUri { get; private set; }
+
     public static HttpResponseMessage Ok(string body) =>
         new(HttpStatusCode.OK) { Content = new StringContent(body) };
 
     protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
     {
         CallCount++;
+        LastRequestUri = request.RequestUri;
         return Task.FromResult(_respond());
     }
 }
