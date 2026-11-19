@@ -1,55 +1,63 @@
-using FxExchange.Core;
 using Microsoft.Extensions.Configuration;
 
 namespace FxExchange.Cli;
 
 /// <summary>
-/// Settings for --live, read from the "ExchangeRates" section of appsettings.json.
-/// The defaults here are used when the file or a value is missing, so the tool still needs zero setup.
+/// The "ExchangeRates" section of appsettings.json, which is the single source for these values.
+/// <see cref="Load"/> validates them and turns them into <see cref="LiveRateSettings"/>.
 /// </summary>
 public sealed class ExchangeRateOptions
 {
     public const string SectionName = "ExchangeRates";
-    public const int DefaultTimeoutSeconds = 5;
 
-    public Uri SourceUrl { get; set; } = NationalbankenRateSource.DefaultUri;
+    public Uri? SourceUrl { get; set; }
 
-    public int TimeoutSeconds { get; set; } = DefaultTimeoutSeconds;
+    public int? TimeoutSeconds { get; set; }
 
     /// <summary>
-    /// A broken settings file or a bad value never stops the tool: it is reported as a warning
-    /// and the default is used instead.
+    /// Returns null, after a warning, when the settings are missing or invalid. --live then treats it like a
+    /// failed download and falls back to cached or built-in rates, so a broken file never stops the tool.
     /// </summary>
-    public static ExchangeRateOptions Load(string directory, TextWriter warnings)
+    public static LiveRateSettings? Load(string directory, TextWriter warnings)
     {
-        ExchangeRateOptions options;
+        ExchangeRateOptions? options;
         try
         {
-            var configuration = new ConfigurationBuilder()
+            options = new ConfigurationBuilder()
                 .SetBasePath(directory)
                 .AddJsonFile("appsettings.json", optional: true)
-                .Build();
-
-            options = configuration.GetSection(SectionName).Get<ExchangeRateOptions>() ?? new ExchangeRateOptions();
+                .Build()
+                .GetSection(SectionName)
+                .Get<ExchangeRateOptions>();
         }
         catch (Exception ex) when (ex is InvalidDataException or FormatException or InvalidOperationException)
         {
-            warnings.WriteLine($"Warning: could not read appsettings.json ({ex.Message}). Using default settings.");
-            return new ExchangeRateOptions();
+            return Warn(warnings, $"could not read appsettings.json ({ex.Message}).");
         }
 
-        if (!options.SourceUrl.IsAbsoluteUri || (options.SourceUrl.Scheme != Uri.UriSchemeHttps && options.SourceUrl.Scheme != Uri.UriSchemeHttp))
+        if (options is null)
         {
-            warnings.WriteLine($"Warning: SourceUrl '{options.SourceUrl}' is not an http(s) address. Using the default.");
-            options.SourceUrl = NationalbankenRateSource.DefaultUri;
+            return Warn(warnings, $"the {SectionName} section is missing from appsettings.json.");
         }
 
-        if (options.TimeoutSeconds is < 1 or > 60)
+        if (options.SourceUrl is not { IsAbsoluteUri: true } url || url.Scheme != Uri.UriSchemeHttps)
         {
-            warnings.WriteLine($"Warning: TimeoutSeconds must be between 1 and 60, but was {options.TimeoutSeconds}. Using {DefaultTimeoutSeconds}.");
-            options.TimeoutSeconds = DefaultTimeoutSeconds;
+            return Warn(warnings, $"{SectionName}:SourceUrl in appsettings.json is missing or not an https address.");
         }
 
-        return options;
+        if (options.TimeoutSeconds is not int seconds || seconds is < 1 or > 60)
+        {
+            return Warn(warnings, $"{SectionName}:TimeoutSeconds in appsettings.json is missing or not between 1 and 60.");
+        }
+
+        return new LiveRateSettings(url, TimeSpan.FromSeconds(seconds));
+    }
+
+    private static LiveRateSettings? Warn(TextWriter warnings, string problem)
+    {
+        warnings.WriteLine($"Warning: {problem}");
+        return null;
     }
 }
+
+public sealed record LiveRateSettings(Uri SourceUrl, TimeSpan Timeout);

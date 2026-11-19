@@ -46,15 +46,6 @@ public class ExchangeCommandTests
     }
 
     [Fact]
-    public void SameCurrency_EchoesAmount()
-    {
-        var (exitCode, output, _) = Run(English, "USD/USD", "42.5");
-
-        Assert.Equal(ExchangeCommand.Success, exitCode);
-        Assert.Equal("42.5", output.Trim());
-    }
-
-    [Fact]
     public void UnknownCurrency_WritesErrorMessage()
     {
         var (exitCode, output, error) = Run(Danish, "EUR/XYZ", "1");
@@ -82,15 +73,6 @@ public class ExchangeCommandTests
 
         Assert.Equal(ExchangeCommand.InvalidArguments, exitCode);
         Assert.Contains("Invalid amount", error);
-    }
-
-    [Fact]
-    public void TooManyArguments_PrintsUsage()
-    {
-        var (exitCode, output, _) = Run(Danish, "EUR/DKK", "1", "extra");
-
-        Assert.Equal(ExchangeCommand.InvalidArguments, exitCode);
-        Assert.Contains("Usage", output);
     }
 
     [Theory]

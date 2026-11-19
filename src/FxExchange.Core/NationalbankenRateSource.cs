@@ -8,16 +8,15 @@ namespace FxExchange.Core;
 /// </summary>
 public static class NationalbankenRateSource
 {
-    public static readonly Uri DefaultUri = new("https://www.nationalbanken.dk/api/currencyratesxml?lang=en");
-
     public static async Task<InMemoryExchangeRateProvider> FetchAsync(
         HttpClient httpClient,
-        Uri? uri = null,
+        Uri sourceUrl,
         CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(httpClient);
+        ArgumentNullException.ThrowIfNull(sourceUrl);
 
-        var xml = await httpClient.GetStringAsync(uri ?? DefaultUri, cancellationToken).ConfigureAwait(false);
+        var xml = await httpClient.GetStringAsync(sourceUrl, cancellationToken).ConfigureAwait(false);
         return Parse(xml);
     }
 

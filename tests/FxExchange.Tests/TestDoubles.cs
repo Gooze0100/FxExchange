@@ -1,4 +1,5 @@
 using System.Net;
+using FxExchange.Cli;
 
 namespace FxExchange.Tests;
 
@@ -60,6 +61,9 @@ internal sealed class TempCacheFile : IDisposable
 
 internal static class SampleData
 {
+    public static readonly LiveRateSettings LiveSettings =
+        new(new Uri("https://rates.example.test/currencyratesxml"), TimeSpan.FromSeconds(5));
+
     public const string NationalbankenXml = """
         <?xml version="1.0" encoding="utf-8"?>
         <exchangerates type="Exchange rates" author="Danmarks Nationalbank" refcur="DKK" refamt="1">

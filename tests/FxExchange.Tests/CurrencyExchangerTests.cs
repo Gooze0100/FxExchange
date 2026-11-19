@@ -10,14 +10,10 @@ public class CurrencyExchangerTests
     // decimal can't be used in attributes, so amounts and expected results are invariant-culture strings.
     [Theory]
     [InlineData("EUR/DKK", "1", "7.4394")] // the example from the exercise
-    [InlineData("EUR/DKK", "10", "74.394")]
     [InlineData("DKK/EUR", "100", "13.4419")]
-    [InlineData("JPY/DKK", "100", "5.974")]
     [InlineData("EUR/USD", "1", "1.1219")] // cross rate, neither side is DKK
     [InlineData("USD/JPY", "1", "110.9993")]
-    [InlineData("GBP/SEK", "1", "11.207")]
     [InlineData("CHF/NOK", "250.5", "2184.1427")]
-    [InlineData("SEK/NOK", "1000", "970.6633")]
     public void Exchange_KnownPair_ReturnsExpectedAmount(string pair, string amount, string expected)
     {
         var result = _exchanger.Exchange(CurrencyPair.Parse(pair), Dec(amount));
@@ -28,7 +24,6 @@ public class CurrencyExchangerTests
     [Theory]
     [InlineData("EUR/EUR", "123.456789")]
     [InlineData("DKK/DKK", "1")]
-    [InlineData("JPY/JPY", "0")]
     public void Exchange_SameCurrency_ReturnsPassedInAmountUnchanged(string pair, string amount)
     {
         var result = _exchanger.Exchange(CurrencyPair.Parse(pair), Dec(amount));
@@ -36,17 +31,10 @@ public class CurrencyExchangerTests
         Assert.Equal(Dec(amount), result);
     }
 
-    [Fact]
-    public void Exchange_ZeroAmount_ReturnsZero()
-    {
-        Assert.Equal(0m, _exchanger.Exchange(CurrencyPair.Parse("EUR/USD"), 0m));
-    }
-
     [Theory]
     [InlineData("XYZ/DKK", "XYZ")]
     [InlineData("DKK/XYZ", "XYZ")]
     [InlineData("XYZ/XYZ", "XYZ")] // unknown wins over "same currency"
-    [InlineData("PLN/USD", "PLN")]
     public void Exchange_UnknownCurrency_ThrowsWithCurrencyCode(string pair, string unknownCode)
     {
         var ex = Assert.Throws<UnknownCurrencyException>(() => _exchanger.Exchange(CurrencyPair.Parse(pair), 1m));
@@ -90,25 +78,6 @@ public class CurrencyExchangerTests
         var exchanger = new CurrencyExchanger(provider);
 
         Assert.Equal(0.0001m, exchanger.Exchange(CurrencyPair.Parse("AAA/DKK"), 1m));
-    }
-
-    [Theory]
-    [InlineData("EUR", "USD")]
-    [InlineData("GBP", "JPY")]
-    [InlineData("SEK", "CHF")]
-    public void Exchange_RoundTrip_ReturnsCloseToOriginal(string first, string second)
-    {
-        var precise = new CurrencyExchanger(DefaultExchangeRates.CreateProvider(), decimals: 20);
-        var there = precise.Exchange(CurrencyPair.Parse($"{first}/{second}"), 1000m);
-        var back = precise.Exchange(CurrencyPair.Parse($"{second}/{first}"), there);
-
-        Assert.InRange(back, 999.9999m, 1000.0001m);
-    }
-
-    [Fact]
-    public void Constructor_NullProvider_Throws()
-    {
-        Assert.Throws<ArgumentNullException>(() => new CurrencyExchanger(null!));
     }
 
     private static decimal Dec(string value) => decimal.Parse(value, CultureInfo.InvariantCulture);

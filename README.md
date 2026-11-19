@@ -43,7 +43,7 @@ Exchange EUR/DKK 1 --live
 answers during evaluation:
 
 1. Rates already downloaded **today** are read from a local cache file – no network call.
-2. Otherwise today's rates are downloaded (5 second timeout) and saved to the cache.
+2. Otherwise today's rates are downloaded (URL and timeout from `appsettings.json`) and saved to the cache.
 3. If Nationalbanken is unavailable, the **last cached rates** are used, with a warning showing their date.
 4. If there is no cache either, the **built-in rates** are used, with a warning.
 
@@ -52,9 +52,10 @@ created automatically; a missing, unreadable or corrupted file is ignored. No da
 
 Without `--live` the built-in rates are used, so results are deterministic and match the exercise.
 
-### Configuration (optional)
+### Configuration
 
-`src/FxExchange.Cli/appsettings.json` (copied next to `Exchange.exe`) holds the settings for `--live`:
+`src/FxExchange.Cli/appsettings.json` (copied next to `Exchange.exe`) is the single source for the `--live`
+settings; there are no duplicate default values in code:
 
 ```json
 {
@@ -65,5 +66,94 @@ Without `--live` the built-in rates are used, so results are deterministic and m
 }
 ```
 
-The same values are defaults in code, so a missing file, a missing value or a broken file still works:
-a broken or invalid value is reported as a warning and the default is used.
+The values are validated (an https URL, a timeout of 1–60 seconds). If the file is missing, broken or has an
+invalid value, a warning says what is wrong and `--live` behaves as if the download failed: cached or built-in
+rates are used. A broken settings file never stops the tool.
+
+## Structure
+
+```
+src/FxExchange.Core     all the logic; no console code (its only I/O: the download and the cache file)
+  CurrencyPair                    value object, parses and validates "EUR/DKK"
+  IExchangeRateProvider           abstraction over where rates come from
+  InMemoryExchangeRateProvider    rates held in a dictionary (DKK always = 100)
+  DefaultExchangeRates            the rates from the exercise
+  NationalbankenRateSource        downloads/parses the official XML feed
+  FileRateCache                   remembers the last downloaded rates in a JSON file
+  CurrencyExchanger               the calculation
+  Exceptions                      ExchangeException + specific subtypes
+
+src/FxExchange.Cli      thin console layer (assembly name: Exchange)
+  Program                         composition root: chooses the rate source
+  ExchangeCommand                 argument parsing, output, exit codes (testable)
+  RateProviderLoader              live rates -> cache -> built-in fallback chain
+  ExchangeRateOptions             reads and validates the --live settings from appsettings.json
+
+tests/FxExchange.Tests  xUnit tests for every part above
+```
+
+## Design decisions
+
+**Cross rates through DKK.** All rates are quoted against DKK, so any pair is
+`amount × rate(MAIN) / rate(MONEY)`. The "per 100" cancels out. This needs only N rates instead of N²
+pair rates, and adding a currency means adding one number.
+
+**`decimal`, not `double`.** Money must not suffer binary floating point errors (`0.1 + 0.2 != 0.3` in
+`double`). `decimal` is base-10 and has 28–29 significant digits.
+
+**Multiply before dividing** to keep the most precision, then **round once at the end** to 4 decimals
+(the precision of the source rates) with `MidpointRounding.AwayFromZero` – the "school" rounding most
+users expect. .NET's default is banker's rounding (`ToEven`); which one is right is a business
+decision, so it is explicit in the code.
+
+**Same currency returns the amount unchanged** – not rounded, not multiplied by 1.
+
+**Unknown currency beats same currency.** `XYZ/XYZ` is reported as unknown instead of echoing the
+amount, because the user most likely mistyped.
+
+**Validation split by responsibility.** `CurrencyPair` checks the *format* (three letters, slash).
+The rate provider decides whether a currency is *known*. So when live rates add 30+ currencies,
+`CurrencyPair` doesn't change.
+
+**Negative amounts are rejected.** An exchange of a negative amount has no meaning here.
+
+**Culture-aware input and output.** The amount is parsed and printed with the machine's culture
+(`1,5` on Danish Windows, `1.5` on English). No thousands separators in the output, so the result is
+easy to use in scripts. The core library never touches culture – it only works with `decimal`.
+
+**Errors.** Expected problems (bad pair, unknown currency, bad amount) are `ExchangeException`s; the CLI
+catches only those, prints a clear message to stderr and returns a non-zero exit code
+(1 = bad arguments, 2 = exchange failed). Anything else is a bug and is not swallowed.
+
+**Graceful degradation for live rates.** A banking tool should keep working when an external service
+is down, but the user must know which rates were used. Hence the chain live → cached → built-in, with a
+warning on stderr whenever the answer isn't based on today's rates.
+
+**Configuration in one place.** External endpoints can change, so the source URL and timeout live only in
+`appsettings.json`, bound to `ExchangeRateOptions` (the .NET Options pattern) and validated into a
+`LiveRateSettings` record. Keeping them only in the file avoids two copies of the same value drifting apart.
+Invalid or missing settings are treated like a failed download, so the zero-setup promise still holds. A changed
+address is a config change; a changed response format would still need a code change in the parser.
+
+**Persistence without setup.** The cache is a plain JSON file in the temp folder rather than a database,
+as the exercise asks. It is written to a temporary file first and then moved into place, so a crash can't
+leave a half-written cache. Cache failures (no write access, corrupted file) never stop an exchange – the
+cache is an optimisation, not a dependency. Rates count as fresh for the same (UTC) day, because
+Nationalbanken publishes once per banking day.
+
+**Testability.** `ExchangeCommand.Run` gets the args, rate provider, output/error writers and culture as
+parameters, so tests run without a real console or the machine's culture. The live source takes an
+`HttpClient`, so tests use a fake `HttpMessageHandler` instead of the real network. The cache takes a
+file path and a `TimeProvider` (.NET's built-in injectable clock), so tests use their own temp folder and can
+"move to tomorrow" to test stale-cache behaviour.
+
+## What I would add in a real system
+
+- Every result carries its **rate date** (from the XML, not the download time), and stale rates are rejected or flagged.
+- Retries with backoff for the download (e.g. Polly), and a shared cache (e.g. Redis) when many
+  instances run as a service instead of one file per user.
+- **Bid/ask spread** and fees – a bank doesn't exchange at the mid rate.
+- Currency-specific **minor units** (JPY has 0 decimals, most others 2; ISO 4217).
+- Dependency injection with the Generic Host, structured logging (`ILogger`).
+- A `Money` value type (amount + currency) so amounts in different currencies can't be mixed.
+- Audit trail: which rate was used for each exchange.

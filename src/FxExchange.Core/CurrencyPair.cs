@@ -46,5 +46,6 @@ public sealed record CurrencyPair
 
     public override string ToString() => $"{MainCurrency}/{MoneyCurrency}";
 
+    // ASCII only: char.IsLetter would also accept letters like Ą or Ж, but ISO 4217 codes use A-Z.
     private static bool IsIsoCodeFormat(string code) => code.Length == 3 && code.All(char.IsAsciiLetter);
 }

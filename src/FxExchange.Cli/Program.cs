@@ -11,10 +11,15 @@ var positionalArgs = args
 IExchangeRateProvider rates;
 if (useLiveRates && positionalArgs.Length == 2)
 {
-    var options = ExchangeRateOptions.Load(AppContext.BaseDirectory, Console.Error);
-    using var httpClient = new HttpClient { Timeout = TimeSpan.FromSeconds(options.TimeoutSeconds) };
+    var settings = ExchangeRateOptions.Load(AppContext.BaseDirectory, Console.Error);
+    using var httpClient = new HttpClient();
+    if (settings is not null)
+    {
+        httpClient.Timeout = settings.Timeout;
+    }
+
     var cache = new FileRateCache(FileRateCache.DefaultFilePath);
-    rates = await RateProviderLoader.LoadLiveOrDefaultAsync(httpClient, cache, Console.Error, options.SourceUrl);
+    rates = await RateProviderLoader.LoadLiveOrDefaultAsync(httpClient, cache, Console.Error, settings);
 }
 else
 {

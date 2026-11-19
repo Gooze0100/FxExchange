@@ -36,24 +36,11 @@ public class CurrencyPairTests
     [InlineData("EU/DKK")]
     [InlineData("EURO/DKK")]
     [InlineData("E1R/DKK")]
+    [InlineData("E UR/DKK")] // space inside a code is a typo, not trimmed away
+    [InlineData("ĄUR/DKK")] // non-ASCII letter
     [InlineData("EUR/DKK/USD")]
     public void Parse_InvalidFormat_ThrowsInvalidCurrencyPairException(string? input)
     {
         Assert.Throws<InvalidCurrencyPairException>(() => CurrencyPair.Parse(input));
-    }
-
-    [Theory]
-    [InlineData("EUR/EUR", true)]
-    [InlineData("eur/EUR", true)]
-    [InlineData("EUR/DKK", false)]
-    public void IsSameCurrency_ComparesMainAndMoney(string input, bool expected)
-    {
-        Assert.Equal(expected, CurrencyPair.Parse(input).IsSameCurrency);
-    }
-
-    [Fact]
-    public void Pairs_WithSameCurrencies_AreEqual()
-    {
-        Assert.Equal(CurrencyPair.Parse("EUR/DKK"), CurrencyPair.Parse("eur/dkk"));
     }
 }

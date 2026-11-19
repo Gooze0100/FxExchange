@@ -5,7 +5,7 @@ namespace FxExchange.Core;
 /// </summary>
 public static class DefaultExchangeRates
 {
-    public static IReadOnlyDictionary<string, decimal> DkkPer100Units { get; } = new Dictionary<string, decimal>
+    public static InMemoryExchangeRateProvider CreateProvider() => new(new Dictionary<string, decimal>
     {
         ["EUR"] = 743.94m,
         ["USD"] = 663.11m,
@@ -14,7 +14,5 @@ public static class DefaultExchangeRates
         ["NOK"] = 78.40m,
         ["CHF"] = 683.58m,
         ["JPY"] = 5.9740m,
-    };
-
-    public static InMemoryExchangeRateProvider CreateProvider() => new(DkkPer100Units);
+    });
 }

@@ -92,19 +92,22 @@ public sealed class RateProviderLoaderTests : IDisposable
         var url = new Uri("https://example.com/rates.xml");
         using var http = new HttpClient(handler);
 
-        await RateProviderLoader.LoadLiveOrDefaultAsync(http, CreateCache(), _warnings, url);
+        await RateProviderLoader.LoadLiveOrDefaultAsync(http, CreateCache(), _warnings, new LiveRateSettings(url, TimeSpan.FromSeconds(5)));
 
         Assert.Equal(url, handler.LastRequestUri);
     }
 
     [Fact]
-    public async Task NoSourceUrl_CallsNationalbanken()
+    public async Task NotConfigured_SkipsDownloadAndFallsBackWithWarning()
     {
         var handler = WorkingService();
+        using var http = new HttpClient(handler);
 
-        await LoadAsync(handler, CreateCache());
+        var provider = await RateProviderLoader.LoadLiveOrDefaultAsync(http, CreateCache(), _warnings, settings: null);
 
-        Assert.Equal(NationalbankenRateSource.DefaultUri, handler.LastRequestUri);
+        Assert.Equal(0, handler.CallCount);
+        Assert.Equal(743.94m, provider.GetDkkPer100Units("EUR"));
+        Assert.Contains("live rates are not configured", _warnings.ToString());
     }
 
     private static StubHandler WorkingService() => new(() => StubHandler.Ok(SampleData.NationalbankenXml));
@@ -114,6 +117,6 @@ public sealed class RateProviderLoaderTests : IDisposable
     private async Task<IExchangeRateProvider> LoadAsync(StubHandler handler, FileRateCache cache)
     {
         using var http = new HttpClient(handler);
-        return await RateProviderLoader.LoadLiveOrDefaultAsync(http, cache, _warnings);
+        return await RateProviderLoader.LoadLiveOrDefaultAsync(http, cache, _warnings, SampleData.LiveSettings);
     }
 }

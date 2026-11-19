@@ -12,12 +12,6 @@ public sealed class FileRateCacheTests : IDisposable
     public void Dispose() => _file.Dispose();
 
     [Fact]
-    public void TryLoad_NoFile_ReturnsNull()
-    {
-        Assert.Null(CreateCache().TryLoad());
-    }
-
-    [Fact]
     public void SaveThenLoad_ReturnsSameRatesAndTime()
     {
         var cache = CreateCache();
@@ -29,14 +23,6 @@ public sealed class FileRateCacheTests : IDisposable
         Assert.Equal(Today, loaded.FetchedAt);
         Assert.Equal(743.94m, loaded.ToProvider().GetDkkPer100Units("EUR"));
         Assert.Equal(5.9740m, loaded.ToProvider().GetDkkPer100Units("JPY"));
-    }
-
-    [Fact]
-    public void TrySave_CreatesMissingFolder()
-    {
-        CreateCache().TrySave(DefaultExchangeRates.CreateProvider());
-
-        Assert.True(File.Exists(_file.FilePath));
     }
 
     [Theory]

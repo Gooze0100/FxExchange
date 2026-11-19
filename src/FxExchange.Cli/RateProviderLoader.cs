@@ -8,15 +8,15 @@ public static class RateProviderLoader
     /// <summary>
     /// Picks the best available rates for --live, so the tool always produces an answer:
     /// 1. rates already downloaded today (from the cache, no network call),
-    /// 2. otherwise today's rates from Nationalbanken (and saves them to the cache),
-    /// 3. if Nationalbanken is unavailable: the last cached rates, with a warning showing their date,
+    /// 2. otherwise today's rates from the configured source (and saves them to the cache),
+    /// 3. if the download fails or live rates are not configured: the last cached rates, with a warning showing their date,
     /// 4. if there is no cache either: the built-in rates, with a warning.
     /// </summary>
     public static async Task<IExchangeRateProvider> LoadLiveOrDefaultAsync(
         HttpClient httpClient,
         FileRateCache cache,
         TextWriter warnings,
-        Uri? sourceUrl = null,
+        LiveRateSettings? settings,
         CancellationToken cancellationToken = default)
     {
         var cached = cache.TryLoad();
@@ -25,9 +25,14 @@ public static class RateProviderLoader
             return cached.ToProvider();
         }
 
+        if (settings is null)
+        {
+            return Fallback(cached, warnings, "live rates are not configured");
+        }
+
         try
         {
-            var live = await NationalbankenRateSource.FetchAsync(httpClient, sourceUrl, cancellationToken)
+            var live = await NationalbankenRateSource.FetchAsync(httpClient, settings.SourceUrl, cancellationToken)
                 .ConfigureAwait(false);
             cache.TrySave(live);
             return live;
@@ -37,15 +42,19 @@ public static class RateProviderLoader
                                        or XmlException
                                        or ExchangeException)
         {
-            if (cached is not null)
-            {
-                warnings.WriteLine(
-                    $"Warning: could not load live rates ({ex.Message}). Using cached rates from {cached.FetchedAt.UtcDateTime:yyyy-MM-dd}.");
-                return cached.ToProvider();
-            }
-
-            warnings.WriteLine($"Warning: could not load live rates ({ex.Message}). Using built-in rates.");
-            return DefaultExchangeRates.CreateProvider();
+            return Fallback(cached, warnings, $"could not load live rates ({ex.Message})");
         }
+    }
+
+    private static IExchangeRateProvider Fallback(CachedRates? cached, TextWriter warnings, string reason)
+    {
+        if (cached is not null)
+        {
+            warnings.WriteLine($"Warning: {reason}. Using cached rates from {cached.FetchedAt.UtcDateTime:yyyy-MM-dd}.");
+            return cached.ToProvider();
+        }
+
+        warnings.WriteLine($"Warning: {reason}. Using built-in rates.");
+        return DefaultExchangeRates.CreateProvider();
     }
 }

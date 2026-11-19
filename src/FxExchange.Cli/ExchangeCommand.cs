@@ -16,7 +16,8 @@ public static class ExchangeCommand
     public const int InvalidArguments = 1;
     public const int ExchangeFailed = 2;
 
-    // "0.####...": no thousands separators, no trailing zeros, culture-specific decimal separator.
+    // "0." + 28 x "#": prints every real decimal (a decimal has at most 28), so a same-currency amount
+    // comes back exactly as typed. No trailing zeros, no thousands separators, never scientific notation.
     private static readonly string OutputFormat = "0." + new string('#', 28);
 
     public static int Run(

@@ -1,5 +1,4 @@
 using FxExchange.Cli;
-using FxExchange.Core;
 
 namespace FxExchange.Tests;
 
@@ -23,88 +22,69 @@ public sealed class ExchangeRateOptionsTests : IDisposable
     }
 
     [Fact]
-    public void NoSettingsFile_UsesDefaultsWithoutWarning()
-    {
-        var options = Load();
-
-        Assert.Equal(NationalbankenRateSource.DefaultUri, options.SourceUrl);
-        Assert.Equal(ExchangeRateOptions.DefaultTimeoutSeconds, options.TimeoutSeconds);
-        Assert.Equal(string.Empty, _warnings.ToString());
-    }
-
-    [Fact]
-    public void ValidSettings_AreUsed()
+    public void ValidSettings_AreReturned()
     {
         WriteSettings("""{"ExchangeRates":{"SourceUrl":"https://example.com/rates.xml","TimeoutSeconds":10}}""");
 
-        var options = Load();
+        var settings = Load();
 
-        Assert.Equal(new Uri("https://example.com/rates.xml"), options.SourceUrl);
-        Assert.Equal(10, options.TimeoutSeconds);
+        Assert.NotNull(settings);
+        Assert.Equal(new Uri("https://example.com/rates.xml"), settings.SourceUrl);
+        Assert.Equal(TimeSpan.FromSeconds(10), settings.Timeout);
         Assert.Equal(string.Empty, _warnings.ToString());
     }
 
     [Fact]
-    public void MissingValues_KeepTheirDefaults()
+    public void NoSettingsFile_ReturnsNullWithWarning()
     {
-        WriteSettings("""{"ExchangeRates":{"TimeoutSeconds":15}}""");
-
-        var options = Load();
-
-        Assert.Equal(NationalbankenRateSource.DefaultUri, options.SourceUrl);
-        Assert.Equal(15, options.TimeoutSeconds);
+        Assert.Null(Load());
+        Assert.Contains("Warning", _warnings.ToString());
     }
 
-    [Fact]
-    public void MissingSection_UsesDefaults()
+    [Theory]
+    [InlineData("""{"ExchangeRates":{"TimeoutSeconds":5}}""")] // URL missing
+    [InlineData("""{"ExchangeRates":{"SourceUrl":"https://example.com/rates.xml"}}""")] // timeout missing
+    public void MissingValue_ReturnsNullWithWarning(string json)
     {
-        WriteSettings("{}");
+        WriteSettings(json);
 
-        var options = Load();
-
-        Assert.Equal(NationalbankenRateSource.DefaultUri, options.SourceUrl);
-        Assert.Equal(ExchangeRateOptions.DefaultTimeoutSeconds, options.TimeoutSeconds);
+        Assert.Null(Load());
+        Assert.Contains("Warning", _warnings.ToString());
     }
 
     [Theory]
     [InlineData("not a url")]
     [InlineData("ftp://example.com/rates.xml")]
-    public void InvalidUrl_FallsBackToDefaultWithWarning(string url)
+    [InlineData("http://example.com/rates.xml")] // only https is accepted
+    public void InvalidUrl_ReturnsNullWithWarning(string url)
     {
-        WriteSettings("{\"ExchangeRates\":{\"SourceUrl\":\"" + url + "\"}}");
+        WriteSettings("{\"ExchangeRates\":{\"SourceUrl\":\"" + url + "\",\"TimeoutSeconds\":5}}");
 
-        var options = Load();
-
-        Assert.Equal(NationalbankenRateSource.DefaultUri, options.SourceUrl);
+        Assert.Null(Load());
         Assert.Contains("Warning", _warnings.ToString());
     }
 
     [Theory]
     [InlineData(0)]
-    [InlineData(-1)]
     [InlineData(61)]
-    public void InvalidTimeout_FallsBackToDefaultWithWarning(int timeout)
+    public void InvalidTimeout_ReturnsNullWithWarning(int timeout)
     {
-        WriteSettings("{\"ExchangeRates\":{\"TimeoutSeconds\":" + timeout + "}}");
+        WriteSettings("{\"ExchangeRates\":{\"SourceUrl\":\"https://example.com/rates.xml\",\"TimeoutSeconds\":" + timeout + "}}");
 
-        var options = Load();
-
-        Assert.Equal(ExchangeRateOptions.DefaultTimeoutSeconds, options.TimeoutSeconds);
+        Assert.Null(Load());
         Assert.Contains("TimeoutSeconds", _warnings.ToString());
     }
 
     [Fact]
-    public void BrokenJson_FallsBackToDefaultsWithWarning()
+    public void BrokenJson_ReturnsNullWithWarning()
     {
         WriteSettings("{ this is not json");
 
-        var options = Load();
-
-        Assert.Equal(NationalbankenRateSource.DefaultUri, options.SourceUrl);
+        Assert.Null(Load());
         Assert.Contains("could not read appsettings.json", _warnings.ToString());
     }
 
-    private ExchangeRateOptions Load() => ExchangeRateOptions.Load(_directory, _warnings);
+    private LiveRateSettings? Load() => ExchangeRateOptions.Load(_directory, _warnings);
 
     private void WriteSettings(string json) => File.WriteAllText(Path.Combine(_directory, "appsettings.json"), json);
 }

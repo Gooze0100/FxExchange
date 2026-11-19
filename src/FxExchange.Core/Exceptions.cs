@@ -14,22 +14,21 @@ public class ExchangeException : Exception
 
 public sealed class InvalidCurrencyPairException : ExchangeException
 {
+    public string? Input { get; }
+
     public InvalidCurrencyPairException(string? input)
         : base($"Invalid currency pair '{input}'. Expected the format MAIN/MONEY, e.g. EUR/DKK.")
     {
         Input = input;
     }
-
-    public string? Input { get; }
 }
 
 public sealed class UnknownCurrencyException : ExchangeException
 {
+    public string CurrencyCode { get; }
     public UnknownCurrencyException(string currencyCode, IEnumerable<string> supportedCurrencies)
         : base($"Unknown currency '{currencyCode}'. Supported currencies: {string.Join(", ", supportedCurrencies)}.")
     {
         CurrencyCode = currencyCode;
     }
-
-    public string CurrencyCode { get; }
 }
